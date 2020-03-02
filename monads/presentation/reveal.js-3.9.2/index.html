@@ -49,8 +49,6 @@ fun(v) // side effectful function
 
 			<section data-markdown>
 				# Pure functions
-				<pre><code data-trim data-noescape>
-				</code></pre>
 			</section>
 
 			<section data-markdown>
@@ -119,6 +117,14 @@ val p2: (Int, Int) = {
 assert(p1 == p2)
 ```
 				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Why RT is so important?
+				* local reasoning (don't need to know the context of calling a function)
+				* compositionality
+				* inversion of control (caller is in control of the side-effectful computations - e.g. easily can do retries)
+				* easy refactoring
 			</section>
 
 			<section data-markdown>

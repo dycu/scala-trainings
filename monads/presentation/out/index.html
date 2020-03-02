@@ -50,8 +50,6 @@ fun(v) // side effectful function
 
 			<section data-markdown>
 				# Pure functions
-				<pre><code data-trim data-noescape>
-				</code></pre>
 			</section>
 
 			<section data-markdown>
@@ -124,6 +122,14 @@ val p2: (Int, Int) = {
 assert(p1 == p2)
 ```
 				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Why RT is so important?
+				* local reasoning (don't need to know the context of calling a function)
+				* compositionality
+				* inversion of control (caller is in control of the side-effectful computations - e.g. easily can do retries)
+				* easy refactoring
 			</section>
 
 			<section data-markdown>
@@ -352,13 +358,13 @@ import scala.concurrent.Future
 implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 // ec: scala.concurrent.ExecutionContext = scala.concurrent.impl.ExecutionContextImpl@427c606a
 implicit val contextShift = IO.contextShift(ec)
-// contextShift: ContextShift[IO] = cats.effect.internals.IOContextShift@661fe82b
+// contextShift: ContextShift[IO] = cats.effect.internals.IOContextShift@16f271f8
 
 val futureInIO = IO.fromFuture(IO { Future { 
 	println("Side effect")
 }})
 // futureInIO: IO[Unit] = Async(
-//   cats.effect.internals.IOBracket$$$Lambda$3096/0x0000000801a9e840@600f89fe,
+//   cats.effect.internals.IOBracket$$$Lambda$3096/0x0000000801a9e840@4cd4f841,
 //   false
 // )
 ```
