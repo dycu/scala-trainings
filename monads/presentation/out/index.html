@@ -1,61 +1,406 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<link rel="stylesheet" href="css/reset.css">
-		<link rel="stylesheet" href="css/reveal.css">
-		<link rel="stylesheet" href="css/theme/black.css">
+	<title>reveal.js</title>
 
-		<!-- Theme used for syntax highlighting of code -->
-		<link rel="stylesheet" href="lib/css/monokai.css">
+	<link rel="stylesheet" href="css/reset.css">
+	<link rel="stylesheet" href="css/reveal.css">
+	<link rel="stylesheet" href="css/theme/black.css">
 
-		<!-- Printing and PDF exports -->
-		<script>
-			var link = document.createElement( 'link' );
-			link.rel = 'stylesheet';
-			link.type = 'text/css';
-			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
-			document.getElementsByTagName( 'head' )[0].appendChild( link );
-		</script>
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section data-markdown>
-					## Title
-					<pre><code data-trim data-noescape>
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="lib/css/monokai.css">
+
+	<!-- Printing and PDF exports -->
+	<script>
+		var link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.type = 'text/css';
+		link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+		document.getElementsByTagName('head')[0].appendChild(link);
+	</script>
+</head>
+
+<body>
+	<div class="reveal">
+		<div class="slides">
+			<section data-markdown>
+				# IO Monad
+			</section>
+
+			<section data-markdown>
+				## What is a side effect
+				<pre><code data-trim data-noescape>
+Side effect modifies some state variable value(s) outside its local environment,
+that is to say has an observable effect besides returning a value (the main effect)
+to the invoker of the operation
 ```scala
-import fs2._
-val stream = Stream(1,2,3,4,5)
-// stream: Stream[Nothing, Int] = Stream(..)
-stream.zipWithNext.take(2).compile.to(List)
-// res0: List[(Int, Option[Int])] = List((1, Some(2)), (2, Some(3)))
+var v = 0
+// v: Int = 0
+
+def fun(i: Int) = v += i
+
+fun(v) // side effectful function
 ```
-					</code></pre>
-					Slide 1</section>
-				<section>Slide 2</section>
-			</div>
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				# Pure functions
+				<pre><code data-trim data-noescape>
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Pure function
+				<pre><code data-trim data-noescape>
+Function that has no observable effect on the execution of the program other than to compute a result given its inputs				
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Why purity matters
+			</section>
+
+			<section data-markdown>
+### Equational reasoning
+				<pre><code data-trim data-noescape>
+Pure functions give us the ability to use substitution model
+(safely replace any expression in our program with the value that it evaluates)
+as if program was a mathematical expression
+```scala
+var globalState = 0
+// globalState: Int = 0
+
+def pureFunction(input: Int) = input + 1  
+
+// we need to follow the external world while trying to 
+// understand it
+val sideEfectfulFunction = { globalState = 2 }  
+
+assert(pureFunction(1) + pureFunction(2) == 1 + 1 + 2 + 1)
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+### Testability
+				<pre><code data-trim data-noescape>
+* Side effectful free program is deterministic
+* Pure function can be easily tested in separation
+* Functions with side effects are separated by using proper return types
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+### Referential transparency
+				<pre><code data-trim data-noescape>
+We can always assign a sub-expression to a variable and replace all occurrences
+of the sub-expression with that variable
+```scala
+var total = 0
+// total: Int = 0
+
+def addToTotal(x: Int): Int = {
+	total += x
+	total
+}
+
+// it's not referentialy transparent
+assert(addToTotal(1) != addToTotal(1))
+
+val p1: (Int, Int) = (1 + 2, 1 + 2)
+// p1: (Int, Int) = (3, 3)
+val p2: (Int, Int) = {
+	val a = 1 + 2
+	(a, a)
+}
+// p2: (Int, Int) = (3, 3)
+
+// referentialy transparent
+assert(p1 == p2)
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Programs with only pure functions
+			</section>
+
+			<section data-markdown>
+				<pre><code data-trim data-noescape>
+Pure functions are great but program with only pure functions doesn't
+do anything useful. It can't communicate with the outside world,
+because any external change is side-effectful.
+
+Solution: Treat side effects as values.
+```scala
+import cats.effect.IO
+
+var state = 0
+// state: Int = 0
+
+def pureFunctionWithSideEffect(i: Int): IO[Int] = IO {
+	state += i
+	state
+}
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				<pre><code data-trim data-noescape>
+Running function does nothing. To execute it we need to explicitly say so:
+* we can defer running computations to the edge of the system
+```scala
+pureFunctionWithSideEffect(1)
+// res4: IO[Int] = Delay(<function0>)
+pureFunctionWithSideEffect(1).unsafeRunSync
+// res5: Int = 1
+```
+				</code></pre>
+			</section>
+			
+			<section data-markdown>
+				## ```IOApp```
+				<pre><code data-trim data-noescape>
+To avoid manually run IO we can delegate it to the runtime
+```scala
+import cats.effect._
+import cats.syntax.all._
+
+object App extends IOApp {
+	val helloWorld = IO { println("Hello world") }
+
+	def run(args: List[String]): IO[ExitCode] = {
+		helloWorld *> IO { ExitCode.Success }
+	}
+}
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				# How to deal with IO
+				<pre><code data-trim data-noescape>
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Lifting
+				<pre><code data-trim data-noescape>
+Values can be "lifted" into IO
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+val lifted = IO.pure(1)
+// lifted: IO[Int] = Pure(1)
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## ```apply``` vs ```pure```
+				<pre><code data-trim data-noescape>
+pure does not defer the computation. It assumes it's already computed
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+val alreadyComputed = IO.pure { println("Ups")}
+// Ups
+// alreadyComputed: IO[Unit] = Pure(())
+val defferedComputation = IO { println("Deferred") }
+// defferedComputation: IO[Unit] = Delay(<function0>)
+val orLikeThis = IO.delay { println("Deferred") }
+// orLikeThis: IO[Unit] = Delay(<function0>)
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Mapping
+				<pre><code data-trim data-noescape>
+Value inside a IO monad can be modified (has an Applicative type class instance)
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+val mapping = IO { 1 }
+// mapping: IO[Int] = Delay(<function0>)
+mapping.map(before => before + 1).unsafeRunSync
+// res6: Int = 2
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Sequencing computations
+				<pre><code data-trim data-noescape>
+IO is a Monad (formally "has a Monad instance defined"). Multiple instances can be joined by using flatMap
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+val firstProgram = IO { println("Hello") }
+// firstProgram: IO[Unit] = Delay(<function0>)
+val secondProgram = IO { println("world") }
+// secondProgram: IO[Unit] = Delay(<function0>)
+
+firstProgram.flatMap(_ => secondProgram).unsafeRunSync()
+// Hello
+// world
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				<pre><code data-trim data-noescape>
+For better readability we can use for-comprehension
+
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+(for {
+	_ <- firstProgram
+	_ <- secondProgram
+} yield ()).unsafeRunSync
+// Hello
+// world
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Same monad stacks
+				<pre><code data-trim data-noescape>
+Monad stack may be flattened
+```scala 
+import cats.effect.IO
+import cats.implicits._
+import cats.syntax.flatMap._
+
+val monadStack = IO { IO { println("same io stack") } }
+
+monadStack.flatten.unsafeRunSync
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Error handling
+				<pre><code data-trim data-noescape>
+Errors are kept "inside" the IO Monad (follows pattern from ```MonadError``` type class)
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				<pre><code data-trim data-noescape>
+Errors can be pulled from the IO:
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+val failedIO = IO.raiseError(new Exception
+							("Something wrong happened"))
+// failedIO: IO[Nothing] = RaiseError(
+//   java.lang.Exception: Something wrong happened
+// )
+failedIO.attempt
+// res9: IO[Either[Throwable, Nothing]] = Bind(
+//   RaiseError(java.lang.Exception: Something wrong happened),
+//   <function1>
+// )
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				<pre><code data-trim data-noescape>
+Errors can be handled:
+```scala
+import cats.effect.IO
+import cats.implicits._
+
+val handledError = failedIO.handleErrorWith { 
+	case e: Exception => IO { println("Error handled") }
+}
+// handledError: IO[Unit] = Bind(
+//   RaiseError(java.lang.Exception: Something wrong happened),
+//   <function1>
+// )
+handledError.unsafeRunSync
+// Error handled
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				## Interoperation with Future
+				<pre><code data-trim data-noescape>
+To encapsulate side-effectful Future we can do the following:
+```scala
+import cats.effect.IO
+import cats.implicits._
+import scala.concurrent.Future
+
+implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
+// ec: scala.concurrent.ExecutionContext = scala.concurrent.impl.ExecutionContextImpl@427c606a
+implicit val contextShift = IO.contextShift(ec)
+// contextShift: ContextShift[IO] = cats.effect.internals.IOContextShift@661fe82b
+
+val futureInIO = IO.fromFuture(IO { Future { 
+	println("Side effect")
+}})
+// futureInIO: IO[Unit] = Async(
+//   cats.effect.internals.IOBracket$$$Lambda$3096/0x0000000801a9e840@600f89fe,
+//   false
+// )
+```
+				</code></pre>
+			</section>
+
+			<section data-markdown>
+				# Stack safety
+				<pre><code data-trim data-noescape>
+IO is stack safe by using method called "trampolining" (by representing nested calls as data structure we use heap instead of stack)
+
+```scala
+def fib(n: Int, a: Long = 0, b: Long = 1): IO[Long] =
+  IO(a + b).flatMap { b2 =>
+    if (n > 0) 
+      fib(n - 1, b, b2)
+    else 
+      IO.pure(a)
+  }
+```
+				</code></pre>
+			</section>
+
 		</div>
+	</div>
 
-		<script src="js/reveal.js"></script>
+	<script src="js/reveal.js"></script>
 
-		<script>
-			// More info about config & dependencies:
-			// - https://github.com/hakimel/reveal.js#configuration
-			// - https://github.com/hakimel/reveal.js#dependencies
-			Reveal.initialize({
-				hash: true,
-				dependencies: [
-					{ src: 'plugin/markdown/marked.js' },
-					{ src: 'plugin/markdown/markdown.js' },
-					{ src: 'plugin/highlight/highlight.js', async: true },
-					{ src: 'plugin/notes/notes.js', async: true }
-				]
-			});
-		</script>
-	</body>
+	<script>
+		// More info about config & dependencies:
+		// - https://github.com/hakimel/reveal.js#configuration
+		// - https://github.com/hakimel/reveal.js#dependencies
+		Reveal.initialize({
+			hash: true,
+			dependencies: [
+				{ src: 'plugin/markdown/marked.js' },
+				{ src: 'plugin/markdown/markdown.js' },
+				{ src: 'plugin/highlight/highlight.js', async: true },
+				{ src: 'plugin/notes/notes.js', async: true }
+			]
+		});
+	</script>
+</body>
+
 </html>

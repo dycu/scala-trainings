@@ -1,8 +1,6 @@
 do dodania:
-1. różne implementacje IO monad: Monix, ZIO, cats.IO
-2. obsługa błędów w IO (attempt, raiseError)
-3. type classy dla IO (Applicative, Monad), przykłady abstrakcyjnego użycia
-4. rozszerzyć HowToDealWithIO o: fromFuture, pure
+1. zadania do zrobienia na koniec
+2. różne implementacje IO monad: Monix, ZIO, cats.IO
 
 materiały:
 - http://blog.leifbattermann.de/2020/02/03/identify-side-effects-and-refactor-fearlessly/

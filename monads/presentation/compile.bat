@@ -1,1 +1,1 @@
-coursier launch org.scalameta:mdoc_2.12:2.1.1 co.fs2:fs2-core_2.12:2.2.1 -- --site.VERSION 1.0.0 --in ./reveal.js-3.9.2 --watch
+coursier launch org.scalameta:mdoc_2.12:2.1.1 co.fs2:fs2-core_2.12:2.2.1 org.typelevel:cats-effect_2.12:2.1.2 -- --site.VERSION 1.0.0 --in ./reveal.js-3.9.2 --watch
